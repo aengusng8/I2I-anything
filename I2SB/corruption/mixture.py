@@ -30,27 +30,37 @@ class AllCorrupt(enum.IntEnum):
     INPAINT_FREE1020 = 7
     INPAINT_FREE2030 = 8
 
+
 class MixtureCorruptMethod:
     def __init__(self, opt, device="cpu"):
-
         # ===== blur ====
-        self.blur_uni = Deblurring(torch.Tensor([1/9] * 9).to(device), 3, opt.image_size, device)
+        self.blur_uni = Deblurring(
+            torch.Tensor([1 / 9] * 9).to(device), 3, opt.image_size, device
+        )
 
         sigma = 10
-        pdf = lambda x: torch.exp(torch.Tensor([-0.5 * (x/sigma)**2]))
+        pdf = lambda x: torch.exp(torch.Tensor([-0.5 * (x / sigma) ** 2]))
         g_kernel = torch.Tensor([pdf(-2), pdf(-1), pdf(0), pdf(1), pdf(2)]).to(device)
-        self.blur_gauss = Deblurring(g_kernel / g_kernel.sum(), 3, opt.image_size, device)
+        self.blur_gauss = Deblurring(
+            g_kernel / g_kernel.sum(), 3, opt.image_size, device
+        )
 
         # ===== sr4x ====
         factor = 4
         self.sr4x_pool = build_sr_pool(factor, device, opt.image_size)
         self.sr4x_bicubic = build_sr_bicubic(factor, device, opt.image_size)
-        self.upsample = torch.nn.Upsample(scale_factor=factor, mode='nearest')
+        self.upsample = torch.nn.Upsample(scale_factor=factor, mode="nearest")
 
         # ===== inpaint ====
-        self.center_mask = get_center_mask([opt.image_size, opt.image_size])[None,...] # [1, 1, 256, 256]
-        self.free1020_masks = torch.from_numpy((load_freeform_masks("freeform1020"))) # [10000, 1, 256, 256]
-        self.free2030_masks = torch.from_numpy((load_freeform_masks("freeform2030"))) # [10000, 1, 256, 256]
+        self.center_mask = get_center_mask([opt.image_size, opt.image_size])[
+            None, ...
+        ]  # [1, 1, 256, 256]
+        self.free1020_masks = torch.from_numpy(
+            (load_freeform_masks("freeform1020"))
+        )  # [10000, 1, 256, 256]
+        self.free2030_masks = torch.from_numpy(
+            (load_freeform_masks("freeform2030"))
+        )  # [10000, 1, 256, 256]
 
     def jpeg(self, img, qf):
         return jpeg_decode(jpeg_encode(img, qf), qf)
@@ -85,7 +95,7 @@ class MixtureCorruptMethod:
             if mask_index is None:
                 mask_index = np.random.randint(len(self.free2030_masks))
             mask = self.free2030_masks[[mask_index]]
-        return img * (1. - mask) + mask * torch.randn_like(img)
+        return img * (1.0 - mask) + mask * torch.randn_like(img)
 
     def mixture(self, img, corrupt_idx, mask_index=None):
         if corrupt_idx == AllCorrupt.JPEG_5:
@@ -119,13 +129,17 @@ class MixtureCorruptDatasetTrain(Dataset):
         return self.dataset.__len__()
 
     def __getitem__(self, index):
-        clean_img, y = self.dataset[index] # clean_img: tensor [-1,1]
+        clean_img, y = self.dataset[index]  # clean_img: tensor [-1,1]
 
         rand_idx = np.random.choice(AllCorrupt)
         corrupt_img = self.method.mixture(clean_img.unsqueeze(0), rand_idx).squeeze(0)
 
-        assert corrupt_img.shape == clean_img.shape, (clean_img.shape, corrupt_img.shape)
+        assert corrupt_img.shape == clean_img.shape, (
+            clean_img.shape,
+            corrupt_img.shape,
+        )
         return clean_img, corrupt_img, y
+
 
 class MixtureCorruptDatasetVal(Dataset):
     def __init__(self, opt, dataset):
@@ -137,10 +151,15 @@ class MixtureCorruptDatasetVal(Dataset):
         return self.dataset.__len__()
 
     def __getitem__(self, index):
-        clean_img, y = self.dataset[index] # clean_img: tensor [-1,1]
+        clean_img, y = self.dataset[index]  # clean_img: tensor [-1,1]
 
         idx = index % len(AllCorrupt)
-        corrupt_img = self.method.mixture(clean_img.unsqueeze(0), idx, mask_index=idx).squeeze(0)
+        corrupt_img = self.method.mixture(
+            clean_img.unsqueeze(0), idx, mask_index=idx
+        ).squeeze(0)
 
-        assert corrupt_img.shape == clean_img.shape, (clean_img.shape, corrupt_img.shape)
+        assert corrupt_img.shape == clean_img.shape, (
+            clean_img.shape,
+            corrupt_img.shape,
+        )
         return clean_img, corrupt_img, y

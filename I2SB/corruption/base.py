@@ -13,6 +13,7 @@
 
 import torch
 
+
 class H_functions:
     """
     A class replacing the SVD of a matrix H, perhaps efficiently.
@@ -62,7 +63,7 @@ class H_functions:
         """
         temp = self.Vt(vec)
         singulars = self.singulars()
-        return self.U(singulars * temp[:, :singulars.shape[0]])
+        return self.U(singulars * temp[:, : singulars.shape[0]])
 
     def Ht(self, vec):
         """
@@ -70,7 +71,7 @@ class H_functions:
         """
         temp = self.Ut(vec)
         singulars = self.singulars()
-        return self.V(self.add_zeros(singulars * temp[:, :singulars.shape[0]]))
+        return self.V(self.add_zeros(singulars * temp[:, : singulars.shape[0]]))
 
     def H_pinv(self, vec):
         """
@@ -78,5 +79,5 @@ class H_functions:
         """
         temp = self.Ut(vec)
         singulars = self.singulars()
-        temp[:, :singulars.shape[0]] = temp[:, :singulars.shape[0]] / singulars
+        temp[:, : singulars.shape[0]] = temp[:, : singulars.shape[0]] / singulars
         return self.V(self.add_zeros(temp))

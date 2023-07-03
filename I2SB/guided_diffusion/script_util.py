@@ -134,6 +134,7 @@ def create_model_and_diffusion(
     )
     return model, diffusion
 
+
 def create_model(
     image_size,
     num_channels,
@@ -403,7 +404,7 @@ def create_gaussian_diffusion(
     rescale_timesteps=False,
     rescale_learned_sigmas=False,
     timestep_respacing="",
-    **kwargs
+    **kwargs,
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_kl:

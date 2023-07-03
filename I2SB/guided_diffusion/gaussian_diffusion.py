@@ -507,17 +507,19 @@ class GaussianDiffusion:
         log_every_t = self.num_timesteps // 10 if self.num_timesteps >= 10 else 1
         xs = []
         pred_xstarts = []
-        for idx, sample in enumerate(self.p_sample_loop_progressive(
-            model,
-            shape,
-            noise=noise,
-            clip_denoised=clip_denoised,
-            denoised_fn=denoised_fn,
-            cond_fn=cond_fn,
-            model_kwargs=model_kwargs,
-            device=device,
-            progress=progress,
-        )):
+        for idx, sample in enumerate(
+            self.p_sample_loop_progressive(
+                model,
+                shape,
+                noise=noise,
+                clip_denoised=clip_denoised,
+                denoised_fn=denoised_fn,
+                cond_fn=cond_fn,
+                model_kwargs=model_kwargs,
+                device=device,
+                progress=progress,
+            )
+        ):
             if idx % log_every_t == 0 or idx == self.num_timesteps - 1:
                 xs.append(sample["sample"].detach().cpu())
                 pred_xstarts.append(sample["pred_xstart"].detach().cpu())
@@ -616,7 +618,7 @@ class GaussianDiffusion:
         noise = th.randn_like(x)
         mean_pred = (
             out["pred_xstart"] * th.sqrt(alpha_bar_prev)
-            + th.sqrt(1 - alpha_bar_prev - sigma ** 2) * eps
+            + th.sqrt(1 - alpha_bar_prev - sigma**2) * eps
         )
         nonzero_mask = (
             (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))

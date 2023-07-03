@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 def dct1(x):
     """
     Discrete Cosine Transform, Type I
@@ -24,7 +25,9 @@ def dct1(x):
     x_shape = x.shape
     x = x.view(-1, x_shape[-1])
 
-    return torch.fft.rfft(torch.cat([x, x.flip([1])[:, 1:-1]], dim=1))[:, :, 0].view(*x_shape)
+    return torch.fft.rfft(torch.cat([x, x.flip([1])[:, 1:-1]], dim=1))[:, :, 0].view(
+        *x_shape
+    )
 
 
 def idct1(X):
@@ -55,13 +58,13 @@ def dct(x, norm=None):
 
     Vc = torch.view_as_real(torch.fft.fft(v, dim=1))
 
-    k = - torch.arange(N, dtype=x.dtype, device=x.device)[None, :] * np.pi / (2 * N)
+    k = -torch.arange(N, dtype=x.dtype, device=x.device)[None, :] * np.pi / (2 * N)
     W_r = torch.cos(k)
     W_i = torch.sin(k)
 
     V = Vc[:, :, 0] * W_r - Vc[:, :, 1] * W_i
 
-    if norm == 'ortho':
+    if norm == "ortho":
         V[:, 0] /= np.sqrt(N) * 2
         V[:, 1:] /= np.sqrt(N / 2) * 2
 
@@ -86,11 +89,15 @@ def idct(X, norm=None):
 
     X_v = X.contiguous().view(-1, x_shape[-1]) / 2
 
-    if norm == 'ortho':
+    if norm == "ortho":
         X_v[:, 0] *= np.sqrt(N) * 2
         X_v[:, 1:] *= np.sqrt(N / 2) * 2
 
-    k = torch.arange(x_shape[-1], dtype=X.dtype, device=X.device)[None, :] * np.pi / (2 * N)
+    k = (
+        torch.arange(x_shape[-1], dtype=X.dtype, device=X.device)[None, :]
+        * np.pi
+        / (2 * N)
+    )
     W_r = torch.cos(k)
     W_i = torch.sin(k)
 
@@ -104,8 +111,8 @@ def idct(X, norm=None):
 
     v = torch.fft.irfft(torch.view_as_complex(V), n=V.shape[1], dim=1)
     x = v.new_zeros(v.shape)
-    x[:, ::2] += v[:, :N - (N // 2)]
-    x[:, 1::2] += v.flip([1])[:, :N // 2]
+    x[:, ::2] += v[:, : N - (N // 2)]
+    x[:, 1::2] += v.flip([1])[:, : N // 2]
 
     return x.view(*x_shape)
 
@@ -176,6 +183,7 @@ class LinearDCT(nn.Linear):
     increase memory usage.
     :param in_features: size of expected input
     :param type: which dct function in this file to use"""
+
     def __init__(self, in_features, type, norm=None, bias=False):
         self.type = type
         self.N = in_features
@@ -185,15 +193,15 @@ class LinearDCT(nn.Linear):
     def reset_parameters(self):
         # initialise using dct function
         I = torch.eye(self.N)
-        if self.type == 'dct1':
+        if self.type == "dct1":
             self.weight.data = dct1(I).data.t()
-        elif self.type == 'idct1':
+        elif self.type == "idct1":
             self.weight.data = idct1(I).data.t()
-        elif self.type == 'dct':
+        elif self.type == "dct":
             self.weight.data = dct(I, norm=self.norm).data.t()
-        elif self.type == 'idct':
+        elif self.type == "idct":
             self.weight.data = idct(I, norm=self.norm).data.t()
-        self.weight.requires_grad = False # don't learn this!
+        self.weight.requires_grad = False  # don't learn this!
 
 
 def apply_linear_2d(x, linear_layer):
@@ -221,46 +229,169 @@ def apply_linear_3d(x, linear_layer):
 
 def torch_rgb2ycbcr(x):
     # Assume x is a batch of size (N x C x H x W)
-    v = torch.tensor([[.299, .587, .114], [-.1687, -.3313, .5], [.5, -.4187, -.0813]]).to(x.device)
+    v = torch.tensor(
+        [[0.299, 0.587, 0.114], [-0.1687, -0.3313, 0.5], [0.5, -0.4187, -0.0813]]
+    ).to(x.device)
     ycbcr = torch.tensordot(x, v, dims=([1], [1])).transpose(3, 2).transpose(2, 1)
-    ycbcr[:,1:] += 128
+    ycbcr[:, 1:] += 128
     return ycbcr
 
 
 def torch_ycbcr2rgb(x):
     # Assume x is a batch of size (N x C x H x W)
-    v = torch.tensor([[ 1.00000000e+00, -3.68199903e-05,  1.40198758e+00],
-       [ 1.00000000e+00, -3.44113281e-01, -7.14103821e-01],
-       [ 1.00000000e+00,  1.77197812e+00, -1.34583413e-04]]).to(x.device)
+    v = torch.tensor(
+        [
+            [1.00000000e00, -3.68199903e-05, 1.40198758e00],
+            [1.00000000e00, -3.44113281e-01, -7.14103821e-01],
+            [1.00000000e00, 1.77197812e00, -1.34583413e-04],
+        ]
+    ).to(x.device)
     x[:, 1:] -= 128
     rgb = torch.tensordot(x, v, dims=([1], [1])).transpose(3, 2).transpose(2, 1)
     return rgb
+
 
 def chroma_subsample(x):
     return x[:, 0:1, :, :], x[:, 1:, ::2, ::2]
 
 
-def general_quant_matrix(qf = 10):
-    q1 = torch.tensor([
-    16,  11,  10,  16,  24,  40,  51,  61,
-    12,  12,  14,  19,  26,  58,  60,  55,
-    14,  13,  16,  24,  40,  57,  69,  56,
-    14,  17,  22,  29,  51,  87,  80,  62,
-    18,  22,  37,  56,  68, 109, 103,  77,
-    24,  35,  55,  64,  81, 104, 113,  92,
-    49,  64,  78,  87, 103, 121, 120, 101,
-    72,  92,  95,  98, 112, 100, 103,  99
-    ])
-    q2 = torch.tensor([
-        17,  18,  24,  47,  99,  99,  99,  99,
-        18,  21,  26,  66,  99,  99,  99,  99,
-        24,  26,  56,  99,  99,  99,  99,  99,
-        47,  66,  99,  99,  99,  99,  99,  99,
-        99,  99,  99,  99,  99,  99,  99,  99,
-        99,  99,  99,  99,  99,  99,  99,  99,
-        99,  99,  99,  99,  99,  99,  99,  99,
-        99,  99,  99,  99,  99,  99,  99,  99
-    ])
+def general_quant_matrix(qf=10):
+    q1 = torch.tensor(
+        [
+            16,
+            11,
+            10,
+            16,
+            24,
+            40,
+            51,
+            61,
+            12,
+            12,
+            14,
+            19,
+            26,
+            58,
+            60,
+            55,
+            14,
+            13,
+            16,
+            24,
+            40,
+            57,
+            69,
+            56,
+            14,
+            17,
+            22,
+            29,
+            51,
+            87,
+            80,
+            62,
+            18,
+            22,
+            37,
+            56,
+            68,
+            109,
+            103,
+            77,
+            24,
+            35,
+            55,
+            64,
+            81,
+            104,
+            113,
+            92,
+            49,
+            64,
+            78,
+            87,
+            103,
+            121,
+            120,
+            101,
+            72,
+            92,
+            95,
+            98,
+            112,
+            100,
+            103,
+            99,
+        ]
+    )
+    q2 = torch.tensor(
+        [
+            17,
+            18,
+            24,
+            47,
+            99,
+            99,
+            99,
+            99,
+            18,
+            21,
+            26,
+            66,
+            99,
+            99,
+            99,
+            99,
+            24,
+            26,
+            56,
+            99,
+            99,
+            99,
+            99,
+            99,
+            47,
+            66,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+            99,
+        ]
+    )
     s = (5000 / qf) if qf < 50 else (200 - 2 * qf)
     q1 = torch.floor((s * q1 + 50) / 100)
     q1[q1 <= 0] = 1
@@ -291,6 +422,7 @@ def quantization_matrix(qf):
     #                    [255, 255, 255, 255, 255, 255, 255, 255]])
     # return q1, q2
 
+
 def jpeg_encode(x, qf):
     # Assume x is a batch of size (N x C x H x W)
     # [-1, 1] to [0, 255]
@@ -306,7 +438,7 @@ def jpeg_encode(x, qf):
     x_luma = x_luma.reshape(-1, 8, 8) - 128
     x_chroma = x_chroma.reshape(-1, 8, 8) - 128
 
-    dct_layer = LinearDCT(8, 'dct', norm='ortho')
+    dct_layer = LinearDCT(8, "dct", norm="ortho")
     dct_layer.to(x_luma.device)
     x_luma = apply_linear_2d(x_luma, dct_layer)
     x_chroma = apply_linear_2d(x_chroma, dct_layer)
@@ -328,11 +460,12 @@ def jpeg_encode(x, qf):
 
     fold = nn.Fold(output_size=(n_size, n_size), kernel_size=(8, 8), stride=(8, 8))
     x_luma = fold(x_luma)
-    fold = nn.Fold(output_size=(n_size // 2, n_size // 2), kernel_size=(8, 8), stride=(8, 8))
+    fold = nn.Fold(
+        output_size=(n_size // 2, n_size // 2), kernel_size=(8, 8), stride=(8, 8)
+    )
     x_chroma = fold(x_chroma)
 
     return [x_luma, x_chroma]
-
 
 
 def jpeg_decode(x, qf):
@@ -355,20 +488,24 @@ def jpeg_decode(x, qf):
     x_luma = x_luma.reshape(-1, 8, 8)
     x_chroma = x_chroma.reshape(-1, 8, 8)
 
-    dct_layer = LinearDCT(8, 'idct', norm='ortho')
+    dct_layer = LinearDCT(8, "idct", norm="ortho")
     dct_layer.to(x_luma.device)
     x_luma = apply_linear_2d(x_luma, dct_layer)
     x_chroma = apply_linear_2d(x_chroma, dct_layer)
 
     x_luma = (x_luma + 128).reshape(n_batch, (n_size // 8) ** 2, 64).transpose(2, 1)
-    x_chroma = (x_chroma + 128).reshape(n_batch, (n_size // 16) ** 2, 64 * 2).transpose(2, 1)
+    x_chroma = (
+        (x_chroma + 128).reshape(n_batch, (n_size // 16) ** 2, 64 * 2).transpose(2, 1)
+    )
 
     fold = nn.Fold(output_size=(n_size, n_size), kernel_size=(8, 8), stride=(8, 8))
     x_luma = fold(x_luma)
-    fold = nn.Fold(output_size=(n_size // 2, n_size // 2), kernel_size=(8, 8), stride=(8, 8))
+    fold = nn.Fold(
+        output_size=(n_size // 2, n_size // 2), kernel_size=(8, 8), stride=(8, 8)
+    )
     x_chroma = fold(x_chroma)
 
-    x_chroma_repeated = torch.zeros(n_batch, 2, n_size, n_size, device = x_luma.device)
+    x_chroma_repeated = torch.zeros(n_batch, 2, n_size, n_size, device=x_luma.device)
     x_chroma_repeated[:, :, 0::2, 0::2] = x_chroma
     x_chroma_repeated[:, :, 0::2, 1::2] = x_chroma
     x_chroma_repeated[:, :, 1::2, 0::2] = x_chroma
@@ -386,6 +523,8 @@ def jpeg_decode(x, qf):
 
 def build_jpeg(log, qf):
     log.info(f"[Corrupt] JPEG restoration: {qf=}  ...")
+
     def jpeg(img):
         return jpeg_decode(jpeg_encode(img, qf), qf)
+
     return jpeg

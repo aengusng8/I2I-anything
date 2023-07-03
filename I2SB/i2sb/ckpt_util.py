@@ -32,6 +32,7 @@ I2SB_IMG256_UNCOND_CKPT = "256x256_diffusion_uncond_fixedsigma.pt"
 I2SB_IMG256_COND_PKL = "256x256_diffusion_cond_fixedsigma.pkl"
 I2SB_IMG256_COND_CKPT = "256x256_diffusion_cond_fixedsigma.pt"
 
+
 def download(url, local_path, chunk_size=1024):
     os.makedirs(os.path.split(local_path)[0], exist_ok=True)
     with requests.get(url, stream=True) as r:
@@ -43,19 +44,20 @@ def download(url, local_path, chunk_size=1024):
                         f.write(data)
                         pbar.update(chunk_size)
 
+
 def create_argparser():
     return Namespace(
-        attention_resolutions='32,16,8',
+        attention_resolutions="32,16,8",
         batch_size=4,
-        channel_mult='',
+        channel_mult="",
         class_cond=False,
         clip_denoised=True,
         diffusion_steps=1000,
         dropout=0.0,
         image_size=256,
         learn_sigma=True,
-        adm_ckpt='256x256_diffusion_uncond.pt',
-        noise_schedule='linear',
+        adm_ckpt="256x256_diffusion_uncond.pt",
+        noise_schedule="linear",
         num_channels=256,
         num_head_channels=64,
         num_heads=4,
@@ -66,14 +68,15 @@ def create_argparser():
         resblock_updown=True,
         rescale_learned_sigmas=False,
         rescale_timesteps=False,
-        timestep_respacing='250',
+        timestep_respacing="250",
         use_checkpoint=False,
         use_ddim=False,
         use_fp16=True,
         use_kl=False,
         use_new_attention_order=False,
-        use_scale_shift_norm=True
+        use_scale_shift_norm=True,
     )
+
 
 def extract_model_kwargs(kwargs):
     return {
@@ -95,6 +98,7 @@ def extract_model_kwargs(kwargs):
         "use_new_attention_order": kwargs["use_new_attention_order"],
     }
 
+
 def extract_diffusion_kwargs(kwargs):
     return {
         "diffusion_steps": kwargs["diffusion_steps"],
@@ -107,9 +111,10 @@ def extract_diffusion_kwargs(kwargs):
         "timestep_respacing": kwargs["timestep_respacing"],
     }
 
+
 def download_adm_image256_uncond_ckpt(ckpt_dir="data/"):
     ckpt_pkl = os.path.join(ckpt_dir, I2SB_IMG256_UNCOND_PKL)
-    ckpt_pt  = os.path.join(ckpt_dir, I2SB_IMG256_UNCOND_CKPT)
+    ckpt_pt = os.path.join(ckpt_dir, I2SB_IMG256_UNCOND_CKPT)
     if os.path.exists(ckpt_pkl) and os.path.exists(ckpt_pt):
         return
 
@@ -128,16 +133,17 @@ def download_adm_image256_uncond_ckpt(ckpt_dir="data/"):
 
     # pkl
     kwargs = args_to_dict(opt, model_and_diffusion_defaults().keys())
-    kwargs['learn_sigma'] = False
+    kwargs["learn_sigma"] = False
     model_kwargs = extract_model_kwargs(kwargs)
     with open(ckpt_pkl, "wb") as f:
         pickle.dump(model_kwargs, f)
 
     print(f"Saved adm uncond pretrain models at {ckpt_pkl=} and {ckpt_pt}!")
 
+
 def download_adm_image256_cond_ckpt(ckpt_dir="data/"):
     ckpt_pkl = os.path.join(ckpt_dir, I2SB_IMG256_COND_PKL)
-    ckpt_pt  = os.path.join(ckpt_dir, I2SB_IMG256_COND_CKPT)
+    ckpt_pt = os.path.join(ckpt_dir, I2SB_IMG256_COND_CKPT)
     if os.path.exists(ckpt_pkl) and os.path.exists(ckpt_pt):
         return
 
@@ -151,7 +157,7 @@ def download_adm_image256_cond_ckpt(ckpt_dir="data/"):
 
     # pkl
     kwargs = args_to_dict(opt, model_and_diffusion_defaults().keys())
-    kwargs['learn_sigma'] = False
+    kwargs["learn_sigma"] = False
     model_kwargs = extract_model_kwargs(kwargs)
     model_kwargs.update(extract_diffusion_kwargs(kwargs))
     model_kwargs["use_fp16"] = False
@@ -163,19 +169,24 @@ def download_adm_image256_cond_ckpt(ckpt_dir="data/"):
     ckpt_state_dict["out.2.weight"] = ckpt_state_dict["out.2.weight"][:3]
     ckpt_state_dict["out.2.bias"] = ckpt_state_dict["out.2.bias"][:3]
     model = create_model(**model_kwargs)
-    ckpt_state_dict['input_blocks.0.0.weight'] = torch.cat([
-        ckpt_state_dict['input_blocks.0.0.weight'],
-        model.input_blocks[0][0].weight.data[:, 3:]
-    ], dim=1)
+    ckpt_state_dict["input_blocks.0.0.weight"] = torch.cat(
+        [
+            ckpt_state_dict["input_blocks.0.0.weight"],
+            model.input_blocks[0][0].weight.data[:, 3:],
+        ],
+        dim=1,
+    )
     model.load_state_dict(ckpt_state_dict)
     torch.save(ckpt_state_dict, ckpt_pt)
 
     print(f"Saved adm cond pretrain models at {ckpt_pkl=} and {ckpt_pt}!")
 
+
 def download_ckpt(ckpt_dir="data/"):
     os.makedirs(ckpt_dir, exist_ok=True)
     download_adm_image256_uncond_ckpt(ckpt_dir=ckpt_dir)
     download_adm_image256_cond_ckpt(ckpt_dir=ckpt_dir)
+
 
 def build_ckpt_option(opt, log, ckpt_path):
     ckpt_path = Path(ckpt_path)

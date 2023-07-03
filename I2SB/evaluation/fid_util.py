@@ -18,13 +18,26 @@ from cleanfid.fid import get_batch_features, frechet_distance
 
 FID_REF_DIR = Path("data")
 
-def collect_features(dataset, mode, batch_size,
-                     num_workers, device=torch.device("cuda"), use_dataparallel=True, verbose=True):
 
-    dataloader = torch.utils.data.DataLoader(dataset,
-        batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers
+def collect_features(
+    dataset,
+    mode,
+    batch_size,
+    num_workers,
+    device=torch.device("cuda"),
+    use_dataparallel=True,
+    verbose=True,
+):
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        drop_last=False,
+        num_workers=num_workers,
     )
-    feat_model = build_feature_extractor(mode, device, use_dataparallel=use_dataparallel)
+    feat_model = build_feature_extractor(
+        mode, device, use_dataparallel=use_dataparallel
+    )
     l_feats = []
     pbar = tqdm(dataloader, desc="FID") if verbose else dataloader
     for batch in pbar:
@@ -34,6 +47,7 @@ def collect_features(dataset, mode, batch_size,
     mu = np.mean(np_feats, axis=0)
     sigma = np.cov(np_feats, rowvar=False)
     return mu, sigma
+
 
 class NumpyResizeDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, mode, size=(299, 299)):
@@ -59,20 +73,28 @@ class NumpyResizeDataset(torch.utils.data.Dataset):
 
         # ToTensor() converts to [0,1] only if input in uint8
         if img_resized.dtype == "uint8":
-            img_t = self.transforms(np.array(img_resized))*255
+            img_t = self.transforms(np.array(img_resized)) * 255
         elif img_resized.dtype == "float32":
             img_t = self.transforms(img_resized)
 
         return img_t
 
-@torch.no_grad()
-def compute_fid_from_numpy(numpy_arr, ref_mu, ref_sigma, batch_size=256, mode="legacy_pytorch"):
 
+@torch.no_grad()
+def compute_fid_from_numpy(
+    numpy_arr, ref_mu, ref_sigma, batch_size=256, mode="legacy_pytorch"
+):
     dataset = NumpyResizeDataset(numpy_arr, mode=mode)
-    mu, sigma = collect_features(dataset, mode,
-        num_workers=1, batch_size=batch_size, use_dataparallel=False, verbose=False,
+    mu, sigma = collect_features(
+        dataset,
+        mode,
+        num_workers=1,
+        batch_size=batch_size,
+        use_dataparallel=False,
+        verbose=False,
     )
     return frechet_distance(mu, sigma, ref_mu, ref_sigma)
+
 
 class LMDBResizeDataset(NumpyResizeDataset):
     def __init__(self, dataset, mode):
@@ -82,6 +104,7 @@ class LMDBResizeDataset(NumpyResizeDataset):
         img_pil, _ = self.dataset[i]
         return np.array(img_pil)
 
+
 def compute_fid_ref_stat(opt, log):
     from dataset import imagenet
     from torchvision import transforms
@@ -89,11 +112,15 @@ def compute_fid_ref_stat(opt, log):
     mode = opt.mode
 
     # build dataset
-    transform = transforms.Compose([
-        transforms.Resize(opt.image_size),
-        transforms.CenterCrop(opt.image_size),
-    ])
-    lmdb_dataset = imagenet.build_lmdb_dataset(opt, log, train=opt.split=="train", transform=transform)
+    transform = transforms.Compose(
+        [
+            transforms.Resize(opt.image_size),
+            transforms.CenterCrop(opt.image_size),
+        ]
+    )
+    lmdb_dataset = imagenet.build_lmdb_dataset(
+        opt, log, train=opt.split == "train", transform=transform
+    )
     dataset = LMDBResizeDataset(lmdb_dataset, mode=mode)
     log.info(f"[FID] Built Imagenet {opt.split} dataset, size={len(dataset)}!")
 
@@ -111,15 +138,27 @@ def compute_fid_ref_stat(opt, log):
     return mu, sigma
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     from logger import Logger
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split",       type=str,  choices=["train", "val"], help="which dataset to compute FID ref statistics")
-    parser.add_argument("--mode",        type=str,  default="legacy_pytorch", help="the FID computation mode used in clean-fid")
-    parser.add_argument("--dataset-dir", type=Path, default="/dataset",       help="path to LMDB dataset")
-    parser.add_argument("--image-size",  type=int,  default=256)
+    parser.add_argument(
+        "--split",
+        type=str,
+        choices=["train", "val"],
+        help="which dataset to compute FID ref statistics",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="legacy_pytorch",
+        help="the FID computation mode used in clean-fid",
+    )
+    parser.add_argument(
+        "--dataset-dir", type=Path, default="/dataset", help="path to LMDB dataset"
+    )
+    parser.add_argument("--image-size", type=int, default=256)
     opt = parser.parse_args()
 
     log = Logger(0, ".log")

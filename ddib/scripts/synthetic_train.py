@@ -6,8 +6,12 @@ import argparse
 
 from guided_diffusion import dist_util, logger
 from guided_diffusion.resample import create_named_schedule_sampler
-from guided_diffusion.script_util import model_and_diffusion_defaults_2d, create_model_and_diffusion_2d, args_to_dict, \
-    add_dict_to_argparser
+from guided_diffusion.script_util import (
+    model_and_diffusion_defaults_2d,
+    create_model_and_diffusion_2d,
+    args_to_dict,
+    add_dict_to_argparser,
+)
 from guided_diffusion.synthetic_datasets import Synthetic2DType, load_2d_data
 from guided_diffusion.train_util import TrainLoop
 
@@ -28,8 +32,7 @@ def main():
 
     logger.log("creating 2d data loader...")
     data = load_2d_data(
-        batch_size=args.batch_size,
-        shape=list(Synthetic2DType)[args.task]
+        batch_size=args.batch_size, shape=list(Synthetic2DType)[args.task]
     )
 
     logger.log("training 2d model...")

@@ -10,15 +10,15 @@ from torch.utils.data import DataLoader, Dataset
 
 
 def load_data(
-        *,
-        data_dir,
-        batch_size,
-        image_size,
-        class_cond=False,
-        deterministic=False,
-        random_crop=False,
-        random_flip=True,
-        in_channels=3
+    *,
+    data_dir,
+    batch_size,
+    image_size,
+    class_cond=False,
+    deterministic=False,
+    random_crop=False,
+    random_flip=True,
+    in_channels=3,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -58,7 +58,7 @@ def load_data(
         num_shards=MPI.COMM_WORLD.Get_size(),
         random_crop=random_crop,
         random_flip=random_flip,
-        in_channels=in_channels
+        in_channels=in_channels,
     )
     if deterministic:
         loader = DataLoader(
@@ -73,12 +73,12 @@ def load_data(
 
 
 def load_source_data_for_domain_translation(
-        *,
-        batch_size,
-        image_size,
-        data_dir="./experiments/imagenet",
-        in_channels=3,
-        class_cond=True
+    *,
+    batch_size,
+    image_size,
+    data_dir="./experiments/imagenet",
+    in_channels=3,
+    class_cond=True,
 ):
     """
     This function is new in DDIBs: loads the source dataset for translation.
@@ -103,7 +103,7 @@ def load_source_data_for_domain_translation(
         classes=classes,
         filepaths=all_files,
         shard=MPI.COMM_WORLD.Get_rank(),
-        num_shards=MPI.COMM_WORLD.Get_size()
+        num_shards=MPI.COMM_WORLD.Get_size(),
     )
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=1)
     yield from loader
@@ -135,16 +135,16 @@ def _list_image_files_recursively(data_dir):
 
 class ImageDataset(Dataset):
     def __init__(
-            self,
-            resolution,
-            image_paths,
-            classes=None,
-            shard=0,
-            num_shards=1,
-            random_crop=False,
-            random_flip=True,
-            in_channels=3,
-            filepaths=None
+        self,
+        resolution,
+        image_paths,
+        classes=None,
+        shard=0,
+        num_shards=1,
+        random_crop=False,
+        random_flip=True,
+        in_channels=3,
+        filepaths=None,
     ):
         super().__init__()
         self.resolution = resolution
@@ -205,7 +205,7 @@ def center_crop_arr(pil_image, image_size):
     arr = np.array(pil_image)
     crop_y = (arr.shape[0] - image_size) // 2
     crop_x = (arr.shape[1] - image_size) // 2
-    return arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size]
+    return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
 
 
 def random_crop_arr(pil_image, image_size, min_crop_frac=0.8, max_crop_frac=1.0):
@@ -229,7 +229,7 @@ def random_crop_arr(pil_image, image_size, min_crop_frac=0.8, max_crop_frac=1.0)
     arr = np.array(pil_image)
     crop_y = random.randrange(arr.shape[0] - image_size + 1)
     crop_x = random.randrange(arr.shape[1] - image_size + 1)
-    return arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size]
+    return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
 
 
 def get_image_filenames_for_label(label):
@@ -254,8 +254,16 @@ def get_image_filenames_for_label(label):
     true_label = synset_to_id[synset_word_for_label]
 
     # Finally, return image files corresponding to the true label
-    validation_ground_truth_filepath = os.path.join(base_dir, "evaluations", "ILSVRC2012_validation_ground_truth.txt")
-    source_data_labels = [int(line.strip()) for line in open(validation_ground_truth_filepath).readlines()]
-    image_indexes = [i + 1 for i in range(len(source_data_labels)) if true_label == source_data_labels[i]]
+    validation_ground_truth_filepath = os.path.join(
+        base_dir, "evaluations", "ILSVRC2012_validation_ground_truth.txt"
+    )
+    source_data_labels = [
+        int(line.strip()) for line in open(validation_ground_truth_filepath).readlines()
+    ]
+    image_indexes = [
+        i + 1
+        for i in range(len(source_data_labels))
+        if true_label == source_data_labels[i]
+    ]
     output = [f"ILSVRC2012_val_{str(i).zfill(8)}.JPEG" for i in image_indexes]
     return output

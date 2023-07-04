@@ -39,7 +39,7 @@ def classifier_defaults():
         classifier_resblock_updown=True,  # False
         classifier_pool="attention",
         in_channels=3,
-        out_channels=1000
+        out_channels=1000,
     )
 
 
@@ -76,31 +76,31 @@ def classifier_and_diffusion_defaults():
 
 
 def create_model_and_diffusion(
-        image_size,
-        class_cond,
-        learn_sigma,
-        num_channels,
-        num_res_blocks,
-        in_channels,
-        channel_mult,
-        num_heads,
-        num_head_channels,
-        num_heads_upsample,
-        attention_resolutions,
-        dropout,
-        diffusion_steps,
-        noise_schedule,
-        timestep_respacing,
-        use_kl,
-        predict_xstart,
-        rescale_timesteps,
-        rescale_learned_sigmas,
-        use_checkpoint,
-        use_scale_shift_norm,
-        resblock_updown,
-        use_fp16,
-        use_new_attention_order,
-        num_classes=1000
+    image_size,
+    class_cond,
+    learn_sigma,
+    num_channels,
+    num_res_blocks,
+    in_channels,
+    channel_mult,
+    num_heads,
+    num_head_channels,
+    num_heads_upsample,
+    attention_resolutions,
+    dropout,
+    diffusion_steps,
+    noise_schedule,
+    timestep_respacing,
+    use_kl,
+    predict_xstart,
+    rescale_timesteps,
+    rescale_learned_sigmas,
+    use_checkpoint,
+    use_scale_shift_norm,
+    resblock_updown,
+    use_fp16,
+    use_new_attention_order,
+    num_classes=1000,
 ):
     model = create_model(
         image_size,
@@ -120,7 +120,7 @@ def create_model_and_diffusion(
         resblock_updown=resblock_updown,
         use_fp16=use_fp16,
         use_new_attention_order=use_new_attention_order,
-        num_classes=num_classes
+        num_classes=num_classes,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -136,24 +136,24 @@ def create_model_and_diffusion(
 
 
 def create_model(
-        image_size,
-        num_channels,
-        num_res_blocks,
-        in_channels=3,
-        channel_mult="",
-        learn_sigma=False,
-        class_cond=False,
-        use_checkpoint=False,
-        attention_resolutions="16",
-        num_classes=1000,
-        num_heads=1,
-        num_head_channels=-1,
-        num_heads_upsample=-1,
-        use_scale_shift_norm=False,
-        dropout=0,
-        resblock_updown=False,
-        use_fp16=False,
-        use_new_attention_order=False,
+    image_size,
+    num_channels,
+    num_res_blocks,
+    in_channels=3,
+    channel_mult="",
+    learn_sigma=False,
+    class_cond=False,
+    use_checkpoint=False,
+    attention_resolutions="16",
+    num_classes=1000,
+    num_heads=1,
+    num_head_channels=-1,
+    num_heads_upsample=-1,
+    use_scale_shift_norm=False,
+    dropout=0,
+    resblock_updown=False,
+    use_fp16=False,
+    use_new_attention_order=False,
 ):
     if channel_mult == "":
         if image_size == 512:
@@ -176,7 +176,7 @@ def create_model(
     if in_channels == 1:
         out_channels = 1
     else:
-        out_channels = (3 if not learn_sigma else 6)
+        out_channels = 3 if not learn_sigma else 6
     return UNetModel(
         image_size=image_size,
         in_channels=in_channels,
@@ -199,24 +199,24 @@ def create_model(
 
 
 def create_classifier_and_diffusion(
-        image_size,
-        classifier_use_fp16,
-        classifier_width,
-        classifier_depth,
-        classifier_attention_resolutions,
-        classifier_use_scale_shift_norm,
-        classifier_resblock_updown,
-        classifier_pool,
-        learn_sigma,
-        diffusion_steps,
-        noise_schedule,
-        timestep_respacing,
-        use_kl,
-        predict_xstart,
-        rescale_timesteps,
-        rescale_learned_sigmas,
-        in_channels=1,
-        out_channels=1000
+    image_size,
+    classifier_use_fp16,
+    classifier_width,
+    classifier_depth,
+    classifier_attention_resolutions,
+    classifier_use_scale_shift_norm,
+    classifier_resblock_updown,
+    classifier_pool,
+    learn_sigma,
+    diffusion_steps,
+    noise_schedule,
+    timestep_respacing,
+    use_kl,
+    predict_xstart,
+    rescale_timesteps,
+    rescale_learned_sigmas,
+    in_channels=1,
+    out_channels=1000,
 ):
     classifier = create_classifier(
         image_size,
@@ -228,7 +228,7 @@ def create_classifier_and_diffusion(
         classifier_resblock_updown,
         classifier_pool,
         in_channels=in_channels,
-        out_channels=out_channels
+        out_channels=out_channels,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -244,16 +244,16 @@ def create_classifier_and_diffusion(
 
 
 def create_classifier(
-        image_size,
-        classifier_use_fp16,
-        classifier_width,
-        classifier_depth,
-        classifier_attention_resolutions,
-        classifier_use_scale_shift_norm,
-        classifier_resblock_updown,
-        classifier_pool,
-        in_channels=3,
-        out_channels=1000
+    image_size,
+    classifier_use_fp16,
+    classifier_width,
+    classifier_depth,
+    classifier_attention_resolutions,
+    classifier_use_scale_shift_norm,
+    classifier_resblock_updown,
+    classifier_pool,
+    in_channels=3,
+    out_channels=1000,
 ):
     if image_size == 512:
         channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
@@ -300,28 +300,28 @@ def sr_model_and_diffusion_defaults():
 
 
 def sr_create_model_and_diffusion(
-        large_size,
-        small_size,
-        class_cond,
-        learn_sigma,
-        num_channels,
-        num_res_blocks,
-        num_heads,
-        num_head_channels,
-        num_heads_upsample,
-        attention_resolutions,
-        dropout,
-        diffusion_steps,
-        noise_schedule,
-        timestep_respacing,
-        use_kl,
-        predict_xstart,
-        rescale_timesteps,
-        rescale_learned_sigmas,
-        use_checkpoint,
-        use_scale_shift_norm,
-        resblock_updown,
-        use_fp16,
+    large_size,
+    small_size,
+    class_cond,
+    learn_sigma,
+    num_channels,
+    num_res_blocks,
+    num_heads,
+    num_head_channels,
+    num_heads_upsample,
+    attention_resolutions,
+    dropout,
+    diffusion_steps,
+    noise_schedule,
+    timestep_respacing,
+    use_kl,
+    predict_xstart,
+    rescale_timesteps,
+    rescale_learned_sigmas,
+    use_checkpoint,
+    use_scale_shift_norm,
+    resblock_updown,
+    use_fp16,
 ):
     model = sr_create_model(
         large_size,
@@ -354,22 +354,22 @@ def sr_create_model_and_diffusion(
 
 
 def sr_create_model(
-        large_size,
-        small_size,
-        num_channels,
-        num_res_blocks,
-        learn_sigma,
-        class_cond,
-        use_checkpoint,
-        attention_resolutions,
-        num_heads,
-        num_head_channels,
-        num_heads_upsample,
-        use_scale_shift_norm,
-        dropout,
-        resblock_updown,
-        use_fp16,
-        num_classes=1000
+    large_size,
+    small_size,
+    num_channels,
+    num_res_blocks,
+    learn_sigma,
+    class_cond,
+    use_checkpoint,
+    attention_resolutions,
+    num_heads,
+    num_head_channels,
+    num_heads_upsample,
+    use_scale_shift_norm,
+    dropout,
+    resblock_updown,
+    use_fp16,
+    num_classes=1000,
 ):
     _ = small_size  # hack to prevent unused variable
 
@@ -407,16 +407,16 @@ def sr_create_model(
 
 
 def create_gaussian_diffusion(
-        *,
-        steps=1000,
-        learn_sigma=False,
-        sigma_small=False,
-        noise_schedule="linear",
-        use_kl=False,
-        predict_xstart=False,
-        rescale_timesteps=False,
-        rescale_learned_sigmas=False,
-        timestep_respacing="",
+    *,
+    steps=1000,
+    learn_sigma=False,
+    sigma_small=False,
+    noise_schedule="linear",
+    use_kl=False,
+    predict_xstart=False,
+    rescale_timesteps=False,
+    rescale_learned_sigmas=False,
+    timestep_respacing="",
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_kl:
@@ -485,27 +485,27 @@ def model_and_diffusion_defaults_2d():
         dropout=0.2,
         use_checkpoint=False,
         use_fp16=False,
-        in_channels=2
+        in_channels=2,
     )
     res.update(diffusion_defaults())
     return res
 
 
 def create_model_and_diffusion_2d(
-        learn_sigma,
-        num_channels,
-        num_res_blocks,
-        dropout,
-        diffusion_steps,
-        noise_schedule,
-        timestep_respacing,
-        use_kl,
-        predict_xstart,
-        rescale_timesteps,
-        rescale_learned_sigmas,
-        use_checkpoint,
-        use_fp16,
-        in_channels=2
+    learn_sigma,
+    num_channels,
+    num_res_blocks,
+    dropout,
+    diffusion_steps,
+    noise_schedule,
+    timestep_respacing,
+    use_kl,
+    predict_xstart,
+    rescale_timesteps,
+    rescale_learned_sigmas,
+    use_checkpoint,
+    use_fp16,
+    in_channels=2,
 ):
     model = SyntheticModel(
         in_channels=in_channels,

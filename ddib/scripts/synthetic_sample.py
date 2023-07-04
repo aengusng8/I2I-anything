@@ -10,7 +10,10 @@ import torch.distributed as dist
 
 from common import read_model_and_diffusion
 from guided_diffusion import dist_util, logger
-from guided_diffusion.script_util import model_and_diffusion_defaults_2d, add_dict_to_argparser
+from guided_diffusion.script_util import (
+    model_and_diffusion_defaults_2d,
+    add_dict_to_argparser,
+)
 from guided_diffusion.synthetic_datasets import Synthetic2DType, scatter, heatmap
 
 
@@ -40,16 +43,19 @@ def main():
         logger.log(f"device: {dist_util.dev()}")
 
         sample = diffusion.ddim_sample_loop(
-            model, (args.batch_size, 2),
+            model,
+            (args.batch_size, 2),
             clip_denoised=False,
             device=dist_util.dev(),
         )
-        gathered_samples = [torch.zeros_like(sample) for _ in range(dist.get_world_size())]
+        gathered_samples = [
+            torch.zeros_like(sample) for _ in range(dist.get_world_size())
+        ]
         dist.all_gather(gathered_samples, sample)
         all_samples.extend([sample.cpu().numpy() for sample in gathered_samples])
 
     points = np.concatenate(all_samples, axis=0)
-    points = points[:args.num_samples]
+    points = points[: args.num_samples]
     points_path = os.path.join(image_folder, f"points_{shape}.npy")
     np.save(points_path, points)
     scatter_path = os.path.join(image_folder, f"scatter_{shape}.png")
@@ -62,18 +68,11 @@ def main():
 
 
 def create_argparser():
-    defaults = dict(
-        num_samples=80000,
-        batch_size=20000,
-        model_path=""
-    )
+    defaults = dict(num_samples=80000, batch_size=20000, model_path="")
     defaults.update(model_and_diffusion_defaults_2d())
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--task",
-        type=int,
-        default=0,
-        help="Which dataset to sample from."
+        "--task", type=int, default=0, help="Which dataset to sample from."
     )
     add_dict_to_argparser(parser, defaults)
     return parser

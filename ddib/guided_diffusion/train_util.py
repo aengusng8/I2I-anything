@@ -20,23 +20,23 @@ INITIAL_LOG_LOSS_SCALE = 20.0
 
 class TrainLoop:
     def __init__(
-            self,
-            *,
-            model,
-            diffusion,
-            data,
-            batch_size,
-            microbatch,
-            lr,
-            ema_rate,
-            log_interval,
-            save_interval,
-            resume_checkpoint,
-            use_fp16=False,
-            fp16_scale_growth=1e-3,
-            schedule_sampler=None,
-            weight_decay=0.0,
-            lr_anneal_steps=0,
+        self,
+        *,
+        model,
+        diffusion,
+        data,
+        batch_size,
+        microbatch,
+        lr,
+        ema_rate,
+        log_interval,
+        save_interval,
+        resume_checkpoint,
+        use_fp16=False,
+        fp16_scale_growth=1e-3,
+        schedule_sampler=None,
+        weight_decay=0.0,
+        lr_anneal_steps=0,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -151,8 +151,8 @@ class TrainLoop:
 
     def run_loop(self):
         while (
-                not self.lr_anneal_steps
-                or self.step + self.resume_step < self.lr_anneal_steps
+            not self.lr_anneal_steps
+            or self.step + self.resume_step < self.lr_anneal_steps
         ):
             batch, cond = next(self.data)
             self.run_step(batch, cond)
@@ -179,9 +179,9 @@ class TrainLoop:
     def forward_backward(self, batch, cond):
         self.mp_trainer.zero_grad()
         for i in range(0, batch.shape[0], self.microbatch):
-            micro = batch[i: i + self.microbatch].to(dist_util.dev())
+            micro = batch[i : i + self.microbatch].to(dist_util.dev())
             micro_cond = {
-                k: v[i: i + self.microbatch].to(dist_util.dev())
+                k: v[i : i + self.microbatch].to(dist_util.dev())
                 for k, v in cond.items()
             }
             last_batch = (i + self.microbatch) >= batch.shape[0]
@@ -246,8 +246,10 @@ class TrainLoop:
 
         if dist.get_rank() == 0:
             with bf.BlobFile(
-                    bf.join(get_blob_logdir(), f"opt{(self.step + self.resume_step):06d}.pt"),
-                    "wb",
+                bf.join(
+                    get_blob_logdir(), f"opt{(self.step + self.resume_step):06d}.pt"
+                ),
+                "wb",
             ) as f:
                 th.save(self.opt.state_dict(), f)
 

@@ -51,12 +51,12 @@ class ResBlock(TimestepBlock):
     """
 
     def __init__(
-            self,
-            channels,
-            emb_channels,
-            dropout,
-            out_channels=None,
-            use_checkpoint=False,
+        self,
+        channels,
+        emb_channels,
+        dropout,
+        out_channels=None,
+        use_checkpoint=False,
     ):
         super().__init__()
         self.channels = channels
@@ -66,21 +66,16 @@ class ResBlock(TimestepBlock):
         self.use_checkpoint = use_checkpoint
 
         self.in_layers = nn.Sequential(
-            normalization(channels),
-            nn.SiLU(),
-            linear(channels, self.out_channels)
+            normalization(channels), nn.SiLU(), linear(channels, self.out_channels)
         )
         self.emb_layers = nn.Sequential(
-            nn.SiLU(),
-            linear(emb_channels, self.out_channels)
+            nn.SiLU(), linear(emb_channels, self.out_channels)
         )
         self.out_layers = nn.Sequential(
             normalization(self.out_channels),
             nn.SiLU(),
             nn.Dropout(p=dropout),
-            zero_module(
-                linear(self.out_channels, self.out_channels)
-            )
+            zero_module(linear(self.out_channels, self.out_channels)),
         )
 
         if self.out_channels == channels:
@@ -122,14 +117,14 @@ class SyntheticModel(nn.Module):
     """
 
     def __init__(
-            self,
-            in_channels,
-            model_channels,
-            out_channels,
-            num_res_blocks,
-            dropout=0,
-            use_checkpoint=False,
-            use_fp16=False
+        self,
+        in_channels,
+        model_channels,
+        out_channels,
+        num_res_blocks,
+        dropout=0,
+        use_checkpoint=False,
+        use_fp16=False,
     ):
         super().__init__()
 
@@ -175,7 +170,7 @@ class SyntheticModel(nn.Module):
                 model_channels,
                 dropout,
                 use_checkpoint=use_checkpoint,
-            )
+            ),
         )
 
         self.output_blocks = nn.ModuleList([])
@@ -194,9 +189,7 @@ class SyntheticModel(nn.Module):
         self.out = nn.Sequential(
             normalization(model_channels * 2),
             nn.SiLU(),
-            zero_module(
-                linear(model_channels * 2, out_channels)
-            )
+            zero_module(linear(model_channels * 2, out_channels)),
         )
 
     def convert_to_fp16(self):
